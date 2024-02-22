@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    /* CSS styles for the table */
+    .center-table {
+        margin: 0 auto; /* Center the table */
+        width: 60%; /* Set the table width to 60% */
+    }
+    .add, .search, .show-all {
+        text-align: center; /* Center align forms */
+    }
+</style>
+
+<div class="container">
+    <h1>Team Has Players</h1>
+</div>
+
+<br>
+
+<form action="/team_has_players" method="POST" class="add">
+    <input type="text" placeholder="Fantasy Team Name" name="fantasy_team_name">
+    <input type="text" placeholder="Player Name" name="player_name">
+    <input type="submit" value="Add Player to Team" class="btn btn-secondary">
+</form>
+
+<br><br>
+
+<form action="/team_has_players" method="GET" class="search">
+    <input type="text" placeholder="Search Team-Player Associations" name="query">
+    <input type="submit" value="Search" class="btn btn-secondary">
+</form>
+
+<br><br>
+<form action="/team_has_players" method="GET" class="show-all">
+    <input type="hidden" name="show_all" value="true">
+    <input type="submit" value="Show All Team-Player Associations" class="btn btn-primary">
+</form>
+
+<br><br>
+
+{% if team_has_players %}
+    <!-- Table to display search results or all team-player associations -->
+    <table class="table center-table">
+        <thead>
+            <tr>
+                <th scope="col">Player Name</th>
+                <th scope="col">Fantasy Team Name</th>
+                <th scope="col">Pick Number</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team_player in team_has_players %}
+                <tr>
+                    <td>{{ team_player.PlayerName }}</td>
+                    <td>{{ team_player.TeamName }}</td>
+                    <td>{{ team_player.PickNumber }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_team_player', team_has_player_id=team_player.TeamHasPlayerID) }}" class="btn btn-primary">Edit</a>
+                    </td>
+                    <td>
+                        <form action="{{ url_for('delete_team_player', team_has_player_id=team_player.TeamHasPlayerID) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this player? This action will also delete associated data.');">
+                            <input type="submit" value="Delete" class="btn btn-danger">
+                        </form>
+                        
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+{% endblock %}

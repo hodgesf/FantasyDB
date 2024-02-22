@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Edit Team-Player Relationship</h1>
+    <form method="post">
+        <div class="form-group">
+            <label for="player_name">Player Name</label>
+            <input type="text" class="form-control" id="player_name" name="player_name" value="{{ player_name }}" required>
+        </div>
+        <div class="form-group">
+            <label for="fantasy_team">Fantasy Team</label>
+            <input type="text" class="form-control" id="fantasy_team" name="fantasy_team" value="{{ fantasy_team }}" required>
+        </div>
+        <div class="form-group">
+            <label for="pick_number">Pick Number</label>
+            <input type="number" class="form-control" id="pick_number" name="pick_number" value="{{ pick_number }}" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Update Team-Player Relationship</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    /* CSS styles for the table */
+    .center-table {
+        margin: 0 auto; /* Center the table */
+        width: 60%; /* Set the table width to 60% */
+    }
+    .add, .search, .show-all {
+        text-align: center; /* Center align forms */
+    }
+</style>
+
+<div class="container">
+    <h1>Players</h1>
+</div>
+
+<br>
+
+<form action="/players" method="POST" class="add">
+    <input type="text" placeholder="Player's Name" name="name">
+    <select name="position">
+        <option value="Quarterback">Quarterback</option>
+        <option value="Wide Receiver">Wide Receiver</option>
+        <option value="Running Back">Running Back</option>
+        <option value="Tight End">Tight End</option>
+        <option value="Kicker">Kicker</option>
+        <option value="Defense/Special Team">Defense/Special Team</option>
+    </select>
+    <input type="submit" value="Add Player" class="btn btn-secondary">
+</form>
+
+<br><br>
+
+<form action="/players" method="GET" class="search">
+    <input type="text" placeholder="Search Player or Position" name="query">
+    <input type="submit" value="Search" class="btn btn-secondary">
+</form>
+<br><br>
+<form action="/players" method="GET" class="show-all">
+    <input type="hidden" name="show_all" value="true">
+    <input type="submit" value="Show All Players" class="btn btn-primary">
+</form>
+
+<br><br>
+
+{% if players %}
+    <!-- Table to display search results or all players -->
+    <table class="table center-table">
+        <thead>
+            <tr>
+                <th scope="col">Player Position</th>
+                <th scope="col">Player Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in players %}
+                <tr>
+                    <td>{{ player.PlayerPosition }}</td>
+                    <td>{{ player.PlayerName }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_player', player_id=player.PlayerID) }}" class="btn btn-primary">Edit</a>
+                    </td>
+                    <td>
+                        <form action="/delete_player/{{ player.PlayerID }}" method="post" onsubmit="return confirm('Are you sure you want to delete this player? This action will also delete associated data.');">
+                            <input type="submit" value="Delete" class="btn btn-danger">
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+
+{% endif %}
+
+{% endblock %}

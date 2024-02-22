@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Edit Player Types</h1>
+    <form method="post">
+        <div class="form-group">
+            <label for="player_name">Player Name</label>
+            <input type="text" class="form-control" id="player_name" name="player_type" value="{{ player_type_id }}" required>
+        </div>
+        <div class="form-group">
+            <label for="position">Position</label>
+            <input type="text" class="form-control" id="position" name="position" value="{{ player_position }}" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Update Player Type</button>
+    </form>
+</div>
+{% endblock %}
