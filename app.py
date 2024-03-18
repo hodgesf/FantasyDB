@@ -15,10 +15,12 @@ app.secret_key = 'your_secret_key_here'
 
 db = MySQL(app)
 
+# route for index.html 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# route for users.html
 @app.route('/users', methods=['GET', 'POST'])
 def users():
     title = "Users"
@@ -47,7 +49,7 @@ def users():
                 # If there's a search query, filter players based on the query
                 cur = db.connection.cursor()
                 cur.execute("""
-                    SELECT Users.Username, Users.Email
+                    SELECT Users.UserID, Users.Username, Users.Email
                     FROM Users
                     WHERE Users.Username LIKE %s OR Users.Email LIKE %s
                 """, (f"%{query}%", f"%{query}%"))
@@ -237,19 +239,35 @@ def teams():
 
         if user_result:
             # User exists, retrieve their UserID
-            user_id = user_result[0]
+            user_id = user_result['UserID']
+
+            # Check if a team with the same name already exists for this user
+            cur.execute("""
+                SELECT TeamName FROM FantasyTeams 
+                WHERE TeamName = %s
+            """, (team_name,))
+            existing_team = cur.fetchone()
+
+
+            if existing_team:
+                # Team with the same name already exists for this user
+                flash("A team with the same name already exists.", 'error')
+                return redirect('/teams')
+            else:
+                # Insert the new team with the obtained UserID
+                cur.execute("INSERT INTO FantasyTeams (TeamName, UserID) VALUES (%s, %s)", (team_name, user_id))
+                db.connection.commit()
+                cur.close()
+                flash("Team added successfully.")
+                return redirect('/teams')
         else:
-            # User does not exist, insert the new user and retrieve their UserID
-            cur.execute("INSERT INTO Users (Username) VALUES (%s)", (username,))
-            db.connection.commit()
-            user_id = cur.lastrowid
+            # User does not exist, give a warning and relocate to the users page
+            flash("Username does not exist. Please create the user before adding a team.", 'error')
+            return redirect('/users')
 
-        # Insert the new team with the obtained UserID
-        cur.execute("INSERT INTO FantasyTeams (TeamName, UserID) VALUES (%s, %s)", (team_name, user_id))
-        db.connection.commit()
-        cur.close()
 
-        return redirect('/teams')
+        
+
     else:
         show_all = request.args.get('show_all') == 'true'  # Check if the show_all parameter is true
 
@@ -441,21 +459,49 @@ def team_has_players():
         fantasy_team_name = request.form['fantasy_team_name']
         player_name = request.form['player_name']
 
-        # Fetch the last pick number for the given fantasy team
+        # Check if the player is already associated with any team
         cur = db.connection.cursor()
-
-
-        # Insert the new player into the TeamHasPlayers table
         cur.execute("""
-            INSERT INTO TeamHasPlayers (PlayerID, FantasyTeamID)
-            VALUES (
-            (SELECT PlayerID FROM Players WHERE PlayerName = %s),
-            (SELECT FantasyTeamID FROM FantasyTeams WHERE TeamName = %s)
-                    )""", (player_name, fantasy_team_name))
-        db.connection.commit()
-        cur.close()
+            SELECT COUNT(*) AS player_count
+            FROM TeamHasPlayers
+            WHERE PlayerID = (
+                SELECT PlayerID
+                FROM Players
+                WHERE PlayerName = %s
+            )
+        """, (player_name,))
+        player_count_result = cur.fetchone()
+        player_count = player_count_result['player_count']
 
-        return redirect('/team_has_players')
+        if player_count > 0:
+            # Player is already associated with a team, prevent insertion
+            flash("The player is already associated with a team.", 'error')
+            return redirect('/team_has_players')
+        else:
+            # Fetch the last pick number for the given fantasy team
+            cur.execute("""
+                SELECT MAX(PickNumber) AS max_pick_number
+                FROM TeamHasPlayers 
+            """)
+            max_pick_number_result = cur.fetchone()
+            max_pick_number = max_pick_number_result['max_pick_number']
+
+            # Increment the maximum pick number by 1
+            new_pick_number = max_pick_number + 1
+
+            # Insert the new player into the TeamHasPlayers table
+            cur.execute("""
+                INSERT INTO TeamHasPlayers (PlayerID, FantasyTeamID, PickNumber)
+                VALUES (
+                    (SELECT PlayerID FROM Players WHERE PlayerName = %s),
+                    (SELECT FantasyTeamID FROM FantasyTeams WHERE TeamName = %s),
+                    %s
+                )
+            """, (player_name, fantasy_team_name, new_pick_number))
+            db.connection.commit()
+            cur.close()
+            flash("Player added successfully.")
+            return redirect('/team_has_players')
     else:
         show_all = request.args.get('show_all') == 'true'  # Check if the show_all parameter is true
 
@@ -468,7 +514,7 @@ def team_has_players():
                 JOIN Players ON TeamHasPlayers.PlayerID = Players.PlayerID
                 JOIN FantasyTeams ON TeamHasPlayers.FantasyTeamID = FantasyTeams.FantasyTeamID
                 ORDER BY TeamHasPlayers.PickNumber ASC
-                        """)
+            """)
             team_has_players = cur.fetchall()
             cur.close()
         else:
